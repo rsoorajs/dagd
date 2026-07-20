@@ -16,18 +16,23 @@ services:
 
 steps:
   - name: test
-    image: registry.access.redhat.com/ubi8/ubi-minimal
+    image: docker.io/library/debian:13
     environment:
       DaGdConfigFile: ../container/config.container.php
     commands:
       - rm -f .ready-for-ci
-      - rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
       - >-
-        microdnf install -y httpd php php-mysqlnd php-gd php-intl php-json
-        php-pear php-pecl-apcu php-pecl-zendopcache git nc
-      - microdnf reinstall -y tzdata || microdnf update -y tzdata
+        apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y
+        --no-install-recommends apache2 ca-certificates git libapache2-mod-php netcat-openbsd
+        php-apcu php-cli php-curl php-gd php-intl php-mysql php-pear tzdata
+      - pear channel-update pear.php.net
       - pear install Net_DNS2
-      - microdnf clean all
+      - a2enmod rewrite
+      - mkdir -p /usr/share/fonts/dejavu
+      - >-
+        ln -s /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf
+        /usr/share/fonts/dejavu/DejaVuSansMono.ttf
+      - rm -rf /var/lib/apt/lists/*
       - bash ./container/entrypoint.sh &
       - bash ./container/entrypoint.sh worker &
       - |

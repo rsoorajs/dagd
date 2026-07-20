@@ -776,6 +776,10 @@ EOD;
       id(new DaGdUnitTestAssertDaGdSessionBasics())
       ->addGroup('unit'));
 
+    $runner->arm(
+      id(new DaGdUnitTestClassRepr())
+      ->addGroup('unit'));
+
     $groups = $this->param('--groups');
     if ($groups->getGiven()) {
       $runner->setGroupsFilter(explode(',', $groups->getValue()));

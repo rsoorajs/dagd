@@ -12,7 +12,7 @@ class DaGdRequest {
     $this->cookies = $cookies;
     try {
       $this->session = id(new DaGdSession())->loadSession($this);
-    } catch (Exception $ex) {
+    } catch (Throwable $ex) {
       // If we fail to initialize the session, it is likely that someone
       // manipulated the session cookies in some way. Continue without using
       // the session, let DaGdResponse clear out the old cookies, and start

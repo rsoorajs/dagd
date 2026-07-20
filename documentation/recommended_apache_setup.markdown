@@ -1,4 +1,5 @@
-This is what my development sandbox's /etc/httpd/conf.d/dagd.local.conf looks like.
+This is what a development sandbox's
+`/etc/apache2/sites-available/dagd.conf` can look like on Debian 13.
 
 ```
 <VirtualHost *:80>

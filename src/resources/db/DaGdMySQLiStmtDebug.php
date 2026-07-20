@@ -21,9 +21,13 @@ class DaGdMySQLiStmtDebug extends mysqli_stmt {
     return $this->milliseconds;
   }
 
-  public function execute() {
+  public function execute(?array $params = null): bool {
     $start = microtime(true);
-    $res = parent::execute();
+    // mysqli_stmt::execute() gained the optional $params argument in PHP 8.1.
+    // Calling the PHP 8.0 implementation with even a null argument is invalid.
+    $res = PHP_VERSION_ID >= 80100
+      ? parent::execute($params)
+      : parent::execute();
     $end = microtime(true);
     $this->milliseconds = ($end - $start) * 1000;
     $this->store_result();

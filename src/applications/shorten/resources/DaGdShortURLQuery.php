@@ -329,8 +329,7 @@ final class DaGdShortURLQuery {
       $types = str_repeat('s', count($disabling));
       $update = $this->controller->getWriteDB()->prepare(
         'update shorturls set enabled=0 where shorturl in ('.$placeholders.')');
-      $bind_params = array_merge(array($types), $disabling);
-      call_user_func_array(array($update, 'bind_param'), $bind_params);
+      $update->bind_param($types, ...$disabling);
       $update->execute();
       $affected = $this->controller->getWriteDB()->affected_rows;
       $update->close();

@@ -172,7 +172,7 @@ final class DaGdWorker {
             $result = $task->run($task->getUnserializedInput());
             $end = microtime(true);
             $successful = true;
-          } catch (Exception $e) {
+          } catch (Throwable $e) {
             $end = microtime(true);
             $result = $e;
             $successful = false;

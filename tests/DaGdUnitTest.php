@@ -37,7 +37,7 @@ abstract class DaGdUnitTest extends DaGdTest {
     $msg = 'No exception thrown';
     try {
       $cb->run();
-    } catch (Exception $ex) {
+    } catch (Throwable $ex) {
       $cls = get_class($ex);
       $msg = 'Threw exception `'.$cls.'`';
       if ($cls == $ex_name) {

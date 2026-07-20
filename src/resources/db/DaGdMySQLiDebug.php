@@ -22,7 +22,7 @@ class DaGdMySQLiDebug extends mysqli {
     return $this->queries;
   }
 
-  public function prepare($query) {
+  public function prepare(string $query): mysqli_stmt|false {
     $stmt = new DaGdMySQLiStmtDebug($this, $query);
     $this->queries[] = $stmt;
     return $stmt;

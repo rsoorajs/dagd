@@ -14,16 +14,12 @@ function tag(
 }
 
 function class_repr($obj) {
-  $cls = 'non-object';
   if (is_string($obj)) {
-    $cls = 'string';
-  } else {
-    $get_cls = @get_class($obj);
-    if (is_string($get_cls)) {
-      $cls = $get_cls;
-    }
+    return 'string';
   }
-  return $cls;
+
+  // PHP 8 throws a TypeError when get_class() is called with a non-object.
+  return is_object($obj) ? get_class($obj) : 'non-object';
 }
 
 /**

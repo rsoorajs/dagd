@@ -178,8 +178,8 @@ final class DaGdWhois {
 
     // We need to store the entire result because even if we get referred to a
     // server, we might fail querying it and fail back to the transient result.
-    while (!feof($transient_sock)) {
-      $whois_info .= utf8_encode(fgets($transient_sock));
+    while (($line = fgets($transient_sock)) !== false) {
+      $whois_info .= iconv('ISO-8859-1', 'UTF-8', $line);
     }
 
     fclose($transient_sock);
@@ -260,8 +260,8 @@ final class DaGdWhois {
 
     fwrite($sock, $query.$this->domain."\r\n");
     $response = '';
-    while (!feof($sock)) {
-      $response .= utf8_encode(fgets($sock));
+    while (($line = fgets($sock)) !== false) {
+      $response .= iconv('ISO-8859-1', 'UTF-8', $line);
     }
     fclose($sock);
     if (strlen($response)) {

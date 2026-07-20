@@ -2,9 +2,6 @@
 set -x
 
 function is_db_live {
-  # `nc` seems to segfault on the centos7 aarch64 container image for some
-  # reason.
-  # nc -z db 3306
   php <<'EOD'
 <?php
 $errno = null;
@@ -44,23 +41,12 @@ if [[ "$1" == "worker" ]]; then
 else
   echo 0 > sql/current_schema
   ./scripts/sql -a .
-  cp -v container/dagd-httpd.conf /etc/httpd/conf.d/
 
-  # On RHEL8, where we default to php-fpm, start it up.
-  if [[ -f /usr/sbin/php-fpm ]]; then
-    if [[ ! -d /run/php-fpm ]]; then
-      mkdir /run/php-fpm/
-    fi
-    php-fpm
-    touch /var/log/php-fpm/www-error.log
-    tail -f -n 100 /var/log/php-fpm/www-error.log &
-  fi
+  cp -v container/dagd-httpd.conf /etc/apache2/sites-enabled/000-default.conf
 
-  # docker-compose DNS breaks on ubi8 in the following case:
+  # Add public fallbacks for DNS_ALL queries while retaining Docker's resolver
+  # for service discovery.
   #   dns_get_record('google.com', DNS_ALL);
-  # so add a fallback. We still need it for db access though.
-  # The net result here is a slowdown on /dns/ endpoints, but at least tests
-  # will pass.
   echo "nameserver 8.8.8.8" >> /etc/resolv.conf
   echo "nameserver 8.8.4.4" >> /etc/resolv.conf
 
@@ -68,5 +54,5 @@ else
   # ready to start working.
   touch .ready-for-ci
 
-  httpd -D FOREGROUND
+  apache2ctl -D FOREGROUND
 fi

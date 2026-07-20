@@ -1,8 +1,7 @@
-version: '3'
 services:
   app:
     container_name: dagd-app
-    build: ci-dockerfiles/stream9
+    build: ci-dockerfiles/debian13
     ports:
       - "8080:80"
     depends_on:
@@ -16,7 +15,7 @@ services:
     environment:
       - GOOGLE_INSIGHTS_API
   worker:
-    build: ci-dockerfiles/stream9
+    build: ci-dockerfiles/debian13
     entrypoint:
       - bash
       - ./container/entrypoint.sh

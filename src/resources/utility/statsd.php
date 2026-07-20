@@ -18,7 +18,7 @@ function statsd_send($name, $inc=1, $metric='c') {
     fwrite($sock, $payload);
     fclose($sock);
     return true;
-  } catch (Exception $e) {
+  } catch (Throwable $e) {
     // Rethrow the exception if we are in debug mode.
     $debug = DaGdConfig::get('general.debug');
     if ($debug) {

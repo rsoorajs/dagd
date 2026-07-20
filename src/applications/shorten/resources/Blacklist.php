@@ -239,7 +239,7 @@ class Blacklist {
       return $this
         ->checkAll()
         ->getBlacklisted();
-    } catch (Exception $ex) {
+    } catch (Throwable $ex) {
       return $this->getBlacklisted();
     }
   }

@@ -55,6 +55,14 @@ final class DaGdStartup {
   public function establishGlobalState() {
     self::ensureConfigLoaded();
 
+    // PHP 8.1 changed mysqli's default from reporting errors to throwing
+    // mysqli_sql_exception. da.gd handles database failures through return
+    // values and mysqli::$errno, including the expected missing-table error
+    // during initial schema setup.
+    if (function_exists('mysqli_report')) {
+      mysqli_report(MYSQLI_REPORT_OFF);
+    }
+
     $timezone = DaGdConfig::get('general.timezone');
     if ($timezone) {
       date_default_timezone_set($timezone);
@@ -74,13 +82,13 @@ final class DaGdStartup {
    */
   public function establishAutoloader() {
     self::ensureConfigLoaded();
-    spl_autoload_register('DaGdStartup::__dagd_autoload', $throw = true);
+    spl_autoload_register('DaGdStartup::autoload', $throw = true);
   }
 
   /**
    * Perform a singular auto-load, given a class name.
    */
-  public static function __dagd_autoload($cls) {
+  public static function autoload($cls) {
     $paths = DaGdConfig::get('general.autoload_search');
     foreach ($paths as $path) {
       $path = rtrim($path, '/').'/';

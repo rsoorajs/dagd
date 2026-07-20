@@ -81,7 +81,7 @@ final class DaGdTag {
         if (!is_string($val)) {
           throw new Exception('Attribute value not string: '.class_repr($val));
         }
-        $attr_str .= '="'.htmlspecialchars($val).'"';
+        $attr_str .= '="'.htmlspecialchars($val, ENT_COMPAT).'"';
       }
       $attrs[] = $attr_str;
     }
