@@ -23,9 +23,28 @@ final class DaGdAPCuCache extends DaGdCache {
   }
 
   public function getOrStore($key, DaGdCacheMissCallback $cb, $ttl = 0) {
-    if (function_exists('apcu_entry')) {
+    if ($this->isEnabled() && function_exists('apcu_entry')) {
       // apcu_entry only exists in APCu 5.1+
-      return apcu_entry($key, array($cb, 'run'), $ttl);
+      //
+      // This bypasses get() and set(), so account for the cache operation
+      // here. The callback is only invoked when apcu_entry() has a miss.
+      $miss = false;
+      $callback = function($key) use ($cb, &$miss) {
+        $miss = true;
+        statsd_bump('cache_miss');
+        return $cb->run($key);
+      };
+
+      statsd_bump('cache_get');
+      $result = apcu_entry($key, $callback, $ttl);
+
+      if ($miss) {
+        statsd_bump('cache_set');
+      } else {
+        statsd_bump('cache_hit');
+      }
+
+      return $result;
     }
     return parent::getOrStore($key, $cb, $ttl);
   }
@@ -46,8 +65,9 @@ final class DaGdAPCuCache extends DaGdCache {
   }
 
   public function get($key, $default = false) {
+    parent::get($key, $default);
+
     if (!$this->isEnabled()) {
-      parent::get($key, $default);
       return $default;
     }
 
