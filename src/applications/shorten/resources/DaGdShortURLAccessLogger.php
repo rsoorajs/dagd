@@ -4,7 +4,7 @@ final class DaGdShortURLAccessLogger {
   private $controller;
   private $surl;
 
-  public function __construct(DagdController $controller, DaGdShortURL $surl) {
+  public function __construct(DaGdController $controller, DaGdShortURL $surl) {
     $this->controller = $controller;
     $this->surl = $surl;
   }
