@@ -11,8 +11,6 @@ final class DaGdMemcacheCache extends DaGdCache {
   private $memcache;
 
   public function __construct() {
-    parent::__construct();
-
     $servers = DaGdConfig::get('cache.memcache_servers');
 
     $this->memcache = new Memcache();
