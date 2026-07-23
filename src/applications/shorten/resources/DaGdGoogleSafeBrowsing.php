@@ -3,6 +3,7 @@
 // TODO: Move query_safe_browsing into here.
 final class DaGdGoogleSafeBrowsing implements DaGdCacheMissCallback {
   private $url;
+  private $is_create;
 
   public function __construct($url, $is_create) {
     $this->url = $url;

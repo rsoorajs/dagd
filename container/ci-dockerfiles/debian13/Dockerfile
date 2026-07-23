@@ -4,6 +4,7 @@ RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         apache2 \
         ca-certificates \
+        curl \
         git \
         libapache2-mod-php \
         netcat-openbsd \
@@ -15,8 +16,19 @@ RUN apt-get update \
         php-mysql \
         php-pear \
         tzdata \
-    && pear channel-update pear.php.net \
-    && pear install Net_DNS2 \
+    && curl -fsSL \
+        https://github.com/mikepultz/netdns2/archive/refs/tags/v1.5.5.tar.gz \
+        -o /tmp/netdns2.tar.gz \
+    && echo \
+        "69c65d7d1a775d0b4d4a6b0b0ac8cfbb242aa5d2f03b331400ad7c2d1fdf0eb6  /tmp/netdns2.tar.gz" \
+        | sha256sum --check - \
+    && mkdir /tmp/netdns2 \
+    && tar -xzf /tmp/netdns2.tar.gz --strip-components=1 -C /tmp/netdns2 \
+    && cd /tmp/netdns2 \
+    && pear package \
+    && pear install Net_DNS2-1.5.5.tgz \
+    && cd / \
+    && rm -rf /tmp/netdns2 /tmp/netdns2.tar.gz \
     && a2enmod rewrite \
     && mkdir -p /usr/share/fonts/dejavu \
     && ln -s /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf \

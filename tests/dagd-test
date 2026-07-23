@@ -777,6 +777,10 @@ EOD;
       ->addGroup('unit'));
 
     $runner->arm(
+      id(new DaGdUnitTestPHP8Deprecations())
+      ->addGroup('unit'));
+
+    $runner->arm(
       id(new DaGdUnitTestClassRepr())
       ->addGroup('unit'));
 

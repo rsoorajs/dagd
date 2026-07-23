@@ -21,6 +21,6 @@ final class DaGdRedirectResponse extends DaGdResponse {
   }
 
   public function getBody() {
-    return null;
+    return '';
   }
 }

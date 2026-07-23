@@ -7,6 +7,7 @@ abstract class DaGdResponse {
   private $body = '';
   private $cookies = array();
   private $request;
+  private $trailing_newline = false;
 
   public function setCode($code) {
     $this->code = $code;

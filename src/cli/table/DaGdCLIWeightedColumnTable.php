@@ -9,6 +9,7 @@
  */
 final class DaGdCLIWeightedColumnTable extends DaGdCLITable {
   private $weighted_column;
+  private $terminal_width;
 
   public function __construct($weighted_column) {
     // Index of column that is weighted
