@@ -12,8 +12,6 @@ services:
     #dns:
     #  - 8.8.8.8
     #  - 8.8.4.4
-    environment:
-      - GOOGLE_INSIGHTS_API
   worker:
     build: ci-dockerfiles/debian13
     entrypoint:

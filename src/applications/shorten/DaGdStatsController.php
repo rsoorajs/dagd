@@ -129,29 +129,11 @@ document.addEventListener('DOMContentLoaded', function(event) {
 });
 EOD;
 
-    $want_screenshots = DaGdConfig::get('shorten.stats_screenshots');
-    $screenshot = null;
-    if ($want_screenshots) {
-      $screenshot = tag(
-        'img',
-        null,
-        array(
-          'alt' => 'screenshot',
-          'src' => '/screenshot/'.$shorturl,
-          'class' => 'loading',
-          'height' => '240',
-          'width' => '320',
-          'style' => 'float: left;',
-        )
-      );
-    }
-
     $body = tag(
       'div',
       array(
         $h1,
-        $screenshot,
-        tag('div', '', array('id' => 'access_graph', 'style' => 'float: right; width: 65%;')),
+        tag('div', '', array('id' => 'access_graph')),
         tag('script', $demo_graph, array('type' => 'text/javascript'), true),
       )
     );

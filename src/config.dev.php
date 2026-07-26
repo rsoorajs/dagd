@@ -121,9 +121,6 @@ class DaGdConfig {
       '/stats/([^/]+)?/?(.*)?$' => array(
         'controller' => 'DaGdStatsController',
       ),
-      '/screenshot/(.*)/?$' => array(
-        'controller' => 'DaGdShortenScreenshotController',
-      ),
       '/cow/?$' => array(
         'controller' => 'DaGdCowController',
       ),
@@ -356,12 +353,6 @@ class DaGdConfig {
 
     // How long to cache short URLs for, in seconds. Set to 0 to disable.
     'shorten.cache_ttl' => 86400,
-
-    // Should stats pages show screenshots when possible?
-    'shorten.stats_screenshots' => true,
-
-    // API key for Google PageSpeed Insights, used for screenshot endpoints.
-    'shorten.google_pagespeed_insights_key' => '',
 
     // Regex to validate custom short URLs against.
     // Never add literal '+' here because it's used for preview mode.
