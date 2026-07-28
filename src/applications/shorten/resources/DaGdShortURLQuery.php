@@ -223,7 +223,7 @@ final class DaGdShortURLQuery {
 
     $whitelist_regexes = DaGdConfig::get('shorten.longurl_whitelist');
     foreach ($whitelist_regexes as $regex) {
-      if (preg_match('#'.$regex.'#i', $this->getLongUrl())) {
+      if (preg_match('#'.$regex.'#i', $long_url)) {
         statsd_bump('shorturl_whitelisted_regex');
         statsd_bump('shorturl_whitelisted');
         return true;

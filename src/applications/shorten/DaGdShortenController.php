@@ -208,11 +208,12 @@ EOD;
       return null;
     }
 
+    $is_whitelisted = $query->isWhitelisted($surl->getLongUrl());
+
     // This check is best-effort to allow all older entries to continue
     // working even if they don't host-parse.
     // If it's whitelisted, don't even bother checking dnsbl
-    if (!$query->isWhitelisted($surl->getLongUrl()) &&
-        $query->isBlacklisted($surl->getLongUrl(), false)) {
+    if (!$is_whitelisted && $query->isBlacklisted($surl->getLongUrl(), false)) {
       return null;
     }
 
@@ -231,7 +232,8 @@ EOD;
     // immediate "create and go" type scams.
     $cooldown = DaGdConfig::get('shorten.shorturl_interstitial_cooldown');
     $creation_dt = $surl->getCreationDt();
-    if ($this->getRequest()->acceptsHTML() &&
+    if (!$is_whitelisted &&
+        $this->getRequest()->acceptsHTML() &&
         $cooldown > 0 &&
         $creation_dt &&
         time() - $creation_dt < $cooldown) {
