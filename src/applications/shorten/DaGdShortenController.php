@@ -90,12 +90,106 @@ class DaGdShortenController extends DaGdController {
     font-size: 1.2em;
   }
 }
+#app .interstitial_long_url {
+  box-sizing: border-box;
+  max-width: 100%;
+  border-left: 5px solid #888;
+  padding-left: 12px;
+  font-size: 1.4em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+#app summary.interstitial_long_url {
+  cursor: pointer;
+  font-family: monospace;
+  white-space: normal;
+}
+#app .interstitial_userinfo_warning {
+  border: 1px solid #c33;
+  padding: 12px;
+}
 EOD;
 
     return array_merge(
       parent::getStyle(),
       array($style)
     );
+  }
+
+  private function getInterstitialBody($redirect_url) {
+    $preview_length = 100;
+    $url_is_truncated = strlen($redirect_url) > $preview_length;
+    $url_preview = $url_is_truncated
+      ? substr($redirect_url, 0, $preview_length).'...'
+      : $redirect_url;
+
+    $url_parts = parse_url($redirect_url);
+    $destination_host = is_array($url_parts)
+      ? idx($url_parts, 'host', '(unknown)')
+      : '(unknown)';
+    $has_userinfo =
+      is_array($url_parts) &&
+      (array_key_exists('user', $url_parts) ||
+       array_key_exists('pass', $url_parts));
+
+    $url_link = tag(
+      'a',
+      tag('pre', $redirect_url, array('class' => 'interstitial_long_url')),
+      array('href' => $redirect_url));
+
+    if ($url_is_truncated) {
+      $url_display = tag(
+        'details',
+        array(
+          tag(
+            'summary',
+            $url_preview,
+            array('class' => 'interstitial_long_url')),
+          $url_link,
+        ));
+    } else {
+      $url_display = $url_link;
+    }
+
+    $body = array(
+      tag('h1', 'This short url was created recently.'),
+      tag(
+        'p',
+        'In order to help fight phishing and abuse, fresh short urls '.
+        'require an explicit click-through before we redirect you.'),
+      tag(
+        'p',
+        array(
+          'Destination hostname: ',
+          tag('b', $destination_host),
+        )),
+    );
+
+    if ($has_userinfo) {
+      $body[] = tag(
+        'p',
+        array(
+          tag('b', 'Warning: '),
+          'this URL contains user information before an @ sign. That text '.
+          'is not the destination hostname; the actual destination is ',
+          tag('b', $destination_host),
+          '.',
+        ),
+        array('class' => 'interstitial_userinfo_warning'));
+    }
+
+    $body[] = tag(
+      'p',
+      'This short url is redirecting you to the following URL:');
+    $body[] = $url_display;
+    $body[] = tag(
+      'p',
+      array(
+        'Carefully inspect and ensure you ',
+        tag('b', 'fully trust the above URL'),
+        ' before continuing.'));
+
+    return tag('div', $body);
   }
 
   private function redirect($matches) {
@@ -128,14 +222,30 @@ EOD;
     // TODO: Move build_given_querystring() to DaGdRequest.
     $qs = build_given_querystring();
 
-    $response = new DaGdRedirectResponse();
+    $redirect_url = $surl->getLongUrl().
+      ($matches[2] ? '/'.$matches[2] : '').
+      $qs;
 
-    if ($matches[2]) {
-      $response->setTo($surl->getLongUrl().'/'.$matches[2].$qs);
-    } else {
-      $response->setTo($surl->getLongUrl().$qs);
+    // If the shorturl is really new, force the user through an interstitial.
+    // This at least delays scammers and makes dagd less attractive for
+    // immediate "create and go" type scams.
+    $cooldown = DaGdConfig::get('shorten.shorturl_interstitial_cooldown');
+    $creation_dt = $surl->getCreationDt();
+    if ($this->getRequest()->acceptsHTML() &&
+        $cooldown > 0 &&
+        $creation_dt &&
+        time() - $creation_dt < $cooldown) {
+      statsd_bump('shorturl_cooldown_interstitial_render');
+      $response = new DaGdHTMLResponse();
+      $template = $this
+        ->getBaseTemplate()
+        ->setBody($this->getInterstitialBody($redirect_url))
+        ->getHtmlTag();
+      return $response->setBody($template);
     }
 
+    $response = new DaGdRedirectResponse();
+    $response->setTo($redirect_url);
     statsd_bump('shorturl_access');
     $response->addHeader('X-Original-URL', $surl->getLongUrl());
     return $response;

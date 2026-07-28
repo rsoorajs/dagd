@@ -143,20 +143,31 @@ class DaGdRequest {
     return $this->getParamOrDefault('cow', false, true, true);
   }
 
+  /**
+   * Does the Accept header explicitly advertise an HTML representation?
+   *
+   * Unlike wantsText(), this intentionally ignores query parameters. Security
+   * decisions must not be bypassable by adding something like ?text=1 to a
+   * URL.
+   */
+  public function acceptsHTML() {
+    $accept = $this->getHeader('Accept');
+    if (!$accept) {
+      return false;
+    }
+
+    $accept = strtolower(str_replace(' ', '', $accept));
+    $html_accept_regex = implode('|', DaGdConfig::get('general.html_accept'));
+    return (bool)preg_match('#(?:'.$html_accept_regex.')#i', $accept);
+  }
+
   public function wantsText() {
     $text = $this->getParamOrDefault('text', null, true, true);
     if ($text !== null) {
       return $text;
     }
 
-    if ($accept = $this->getHeader('Accept')) {
-      $accept = strtolower(str_replace(' ', '', $accept));
-      $html_accept_regex = implode('|', DaGdConfig::get('general.html_accept'));
-      return !preg_match('#(?:'.$html_accept_regex.')#i', $accept);
-    }
-
-    // If all else fails, cater to simple clients and assume text.
-    return true;
+    return !$this->acceptsHTML();
   }
 
   public function wantsJson() {

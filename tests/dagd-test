@@ -469,6 +469,23 @@ final class TestCLI extends DaGdCLIProgram {
         ->addGroup('shorten'));
 
     $runner->arm(
+      id(new DaGdResponseCodeTest('/g', 200))
+        ->setAccept('text/html')
+        ->addGroup('shorten')
+        ->addGroup('interstitial'));
+    $runner->arm(
+      id(new DaGdResponseCodeTest('/g?text=1', 200))
+        ->setAccept('text/html')
+        ->addGroup('shorten')
+        ->addGroup('interstitial'));
+
+    $runner->arm(
+      id(new DaGdRegexTest('/g', '@href="http://google\.com"@'))
+        ->setAccept('text/html')
+        ->addGroup('shorten')
+        ->addGroup('interstitial'));
+
+    $runner->arm(
       id(
         new DaGdRegexTest(
           '/s?url=https://some.spam.url&shorturl=spam',

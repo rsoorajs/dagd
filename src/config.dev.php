@@ -369,6 +369,10 @@ class DaGdConfig {
     'shorten.random_charset' =>
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
 
+    // How long should new shorturl redirects be guarded by an interstitial, in
+    // seconds. Set to 0 to disable this feature.
+    'shorten.shorturl_interstitial_cooldown' => 3600,
+
     // The default transient whois server. This is used for IPs.
     'whois.transient_server' => array(
       'server' => 'whois.arin.net',
