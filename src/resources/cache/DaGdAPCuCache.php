@@ -7,6 +7,8 @@ final class DaGdAPCuCache extends DaGdCache {
   private $is_enabled = false;
   private $checked_enabled = false;
 
+  const SENTINEL_KEY = '__dagd_cache_key_lock';
+
   public function getName() {
     return 'APCu';
   }
@@ -28,18 +30,43 @@ final class DaGdAPCuCache extends DaGdCache {
       //
       // This bypasses get() and set(), so account for the cache operation
       // here. The callback is only invoked when apcu_entry() has a miss.
-      $miss = false;
-      $callback = function($key) use ($cb, &$miss) {
-        $miss = true;
+      $sentinel = array();
+      $callback = function($key) use (&$sentinel) {
         statsd_bump('cache_miss');
-        return $cb->run($key);
+        $sentinel[self::SENTINEL_KEY] = random_bytes(32);
+        return $sentinel;
       };
 
       statsd_bump('cache_get');
       $result = apcu_entry($key, $callback, $ttl);
 
-      if ($miss) {
-        statsd_bump('cache_set');
+      if (is_array($result) && array_key_exists(self::SENTINEL_KEY, $result)) {
+        // If we get a sentinel back, we have to do the work so that we can
+        // hopefully update the sentinel (assuming we are the one who set it).
+        // (If we aren't the one who set it, we still need the work, we just
+        // don't update the cache entry for it.)
+        $lease = idx($result, self::SENTINEL_KEY);
+
+        try {
+          $start = microtime(true);
+          $result = $cb->run($key);
+          $end = microtime(true);
+          statsd_time('cache_compute_time', ($end - $start) * 1000);
+        } catch (Throwable $ex) {
+          statsd_bump('cache_compute_exception');
+          if ($lease === idx($sentinel, self::SENTINEL_KEY)) {
+            apcu_delete($key);
+          }
+          throw $ex;
+        }
+
+        // Avoid updating a key we don't have a lease for.
+        if ($lease === idx($sentinel, self::SENTINEL_KEY)) {
+          statsd_bump('cache_set');
+          apcu_store($key, $result, $ttl);
+        } else {
+          statsd_bump('cache_sentinel_key_conflict');
+        }
       } else {
         statsd_bump('cache_hit');
       }
