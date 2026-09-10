@@ -768,6 +768,10 @@ EOD;
       ->addGroup('unit'));
 
     $runner->arm(
+      id(new DaGdUnitTestSessionIntegrity())
+      ->addGroup('unit'));
+
+    $runner->arm(
       id(new DaGdUnitTestPHP8Deprecations())
       ->addGroup('unit'));
 

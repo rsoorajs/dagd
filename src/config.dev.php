@@ -200,10 +200,9 @@ class DaGdConfig {
       'gd',
     ),
 
-    // How should the session data be encrypted?
-    'session.encryption_method' => 'aes-256-cbc',
-
-    // And with what key? This must be set if using any apps that use
+    // Sessions always use AES-256-GCM. The former session.encryption_method
+    // option is ignored, including in existing configuration files.
+    // This key must be set if using any apps that use
     // DaGdSession, or else DaGdSession will fail loudly.
     'session.encryption_key' => null,
 

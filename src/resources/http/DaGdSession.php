@@ -3,12 +3,16 @@
 /**
  * A custom "fake session" implementation.
  *
- * Session information is encrypted and stored in cookies.
+ * Session information is authenticated, encrypted and stored in cookies.
  *
  * We need to ensure we never go over the 4k cookie size limit in modern
  * browsers.
  */
 final class DaGdSession {
+  private const ENCRYPTION_METHOD = 'aes-256-gcm';
+  private const IV_LENGTH = 12;
+  private const TAG_LENGTH = 16;
+
   private $data = array();
 
   public function loadSession(DaGdRequest $request) {
@@ -41,15 +45,33 @@ final class DaGdSession {
   // actual DaGdRequest at their disposal. In normal cases, first-party code
   // should go through loadSession instead.
   public function loadFromCookies($encrypted_data) {
-    $iv_and_data = explode('.', $encrypted_data);
-    if (count($iv_and_data) != 2) {
-      throw new Exception('Could not parse IV and encrypted session data');
+    $parts = explode('.', $encrypted_data);
+    // Legacy unauthenticated cookies cannot be safely migrated.
+    if (count($parts) != 4 || $parts[0] !== 'v1') {
+      return $this->destroy();
     }
 
-    $iv = hex2bin($iv_and_data[0]);
-    $data = $iv_and_data[1];
-    $unser = unserialize($this->decryptData($data, $iv));
-    if ($unser === false) {
+    // OpenSSL accepts truncated GCM tags; require the full tag ourselves.
+    if (strlen($parts[1]) !== self::IV_LENGTH * 2 ||
+        !ctype_xdigit($parts[1]) ||
+        strlen($parts[2]) !== self::TAG_LENGTH * 2 ||
+        !ctype_xdigit($parts[2])) {
+      return $this->destroy();
+    }
+    $iv = hex2bin($parts[1]);
+    $tag = hex2bin($parts[2]);
+    $data = base64_decode($parts[3], true);
+    if ($data === false || $data === '') {
+      return $this->destroy();
+    }
+
+    $plaintext = $this->decryptData($data, $iv, $tag);
+    if ($plaintext === false) {
+      return $this->destroy();
+    }
+    // Never deserialize data before authenticating it.
+    $unser = @unserialize($plaintext);
+    if (!is_array($unser)) {
       return $this->destroy();
     }
     $this->data = $unser;
@@ -61,32 +83,33 @@ final class DaGdSession {
     return $this;
   }
 
-  private function decryptData($str, $iv) {
-    $method = DaGdConfig::get('session.encryption_method');
+  private function decryptData($str, $iv, $tag) {
     $key = DaGdConfig::get('session.encryption_key');
     if (!$key) {
       throw new Exception('You must set session.encryption_key to use sessions');
     }
 
-    return openssl_decrypt($str, $method, $key, 0, $iv);
+    return openssl_decrypt(
+      $str, self::ENCRYPTION_METHOD, $key, OPENSSL_RAW_DATA, $iv, $tag);
   }
 
   private function encryptData($str) {
-    $method = DaGdConfig::get('session.encryption_method');
-    $iv_length = openssl_cipher_iv_length($method);
-    $secure_iv = false;
-    $iv = openssl_random_pseudo_bytes($iv_length, $secure_iv);
-    if (!$secure_iv) {
-      throw new Exception('Unable to obtain a secure IV');
-    }
+    $iv = random_bytes(self::IV_LENGTH);
 
     $key = DaGdConfig::get('session.encryption_key');
     if (!$key) {
       throw new Exception('You must set session.encryption_key to use sessions');
     }
+    $tag = '';
+    $data = openssl_encrypt(
+      $str, self::ENCRYPTION_METHOD, $key, 0, $iv, $tag, '', self::TAG_LENGTH);
+    if ($data === false || strlen($tag) !== self::TAG_LENGTH) {
+      throw new Exception('Unable to encrypt session data');
+    }
     return array(
       'iv' => bin2hex($iv),
-      'data' => openssl_encrypt($str, $method, $key, 0, $iv),
+      'tag' => bin2hex($tag),
+      'data' => $data,
     );
   }
 
@@ -95,7 +118,8 @@ final class DaGdSession {
     $data = $this->encryptData($serialized);
     // We use 3500 because the max is 4000 and we want some leeway
     // We still hit the server header limit on requests eventually, though.
-    $data_chunks = str_split($data['iv'].'.'.$data['data'], 3500);
+    $data_chunks = str_split(
+      'v1.'.$data['iv'].'.'.$data['tag'].'.'.$data['data'], 3500);
     $cookies = array();
     $i = 0;
     foreach ($data_chunks as $chunk) {
